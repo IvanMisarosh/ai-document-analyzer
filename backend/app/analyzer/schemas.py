@@ -6,8 +6,10 @@ from typing import Optional, List
 class Document(BaseModel):
     id: int
     user_context: Optional[str] = None
-    file_url: str
+    object_key: str
     status: str
+
+    model_config = {"from_attributes": True}
 
 
 class DocumentStatusResponse(BaseModel):
@@ -58,7 +60,7 @@ class ChapterAnalysis(ClauseAnalysis):
 
 
 class ClauseAnalysisResponse(ChapterAnalysis):
-    """Response model for clause analysis with additional metadata."""
+    """Response model for a single clause, hydrated from JSONB."""
 
     document_id: int = Field(description="ID of the document this clause belongs to")
-    id: str = Field(description="Unique identifier for the clause in the database")
+    index: int = Field(description="Position index of this clause within the document")

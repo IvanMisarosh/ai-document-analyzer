@@ -1,7 +1,8 @@
 from app.models import Document
 from app.enums import DocumentStatus
+from app.analyzer import schemas
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List, Union
 
 
 class DocumentRepository:
@@ -14,3 +15,17 @@ class DocumentRepository:
     def update_status(self, document: Document, status: DocumentStatus):
         document.status = status
         self.session.commit()
+
+    def save_clauses(
+        self,
+        document: Document,
+        results: Union[List[schemas.ClauseAnalysis], List[schemas.ChapterAnalysis]],
+    ) -> None:
+        document.clauses = [r.model_dump() for r in results]
+        self.session.commit()
+
+    def get_clauses(self, document_id: int) -> Optional[List[dict]]:
+        doc = self.get_by_id(document_id)
+        if doc is None:
+            return None
+        return doc.clauses

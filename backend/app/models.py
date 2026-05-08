@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from app.db.db import Base
 
@@ -18,8 +19,11 @@ class Document(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    user_context = Column(String(500), nullable=False)
-    file_url = Column(String(250), nullable=False)
+    user_context = Column(String(500), nullable=True)
+    # MinIO object key (e.g. "user-1/uuid.pdf")
+    object_key = Column(String(500), nullable=False)
     status = Column(String(50), nullable=False)
+    # Analysis results stored as JSONB; null until analysis completes
+    clauses = Column(JSONB, nullable=True)
 
     user = relationship("User", back_populates="documents")
