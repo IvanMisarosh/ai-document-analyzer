@@ -1,148 +1,117 @@
 # Terms & Conditions Analyzer
 
-## Description
+LLM-powered analyzer for Terms & Conditions documents. Upload a PDF, the system extracts clauses/chapters, sends them through Google Gemini, and returns risk assessments with key insights.
 
-This project is an LLM-powered analyzer for Terms & Conditions (ToS) documents. It enables users to upload PDF files, automatically analyzes their clauses and chapters using Google Gemini, and provides risk assessments and key insights for consumer protection. The system supports user authentication, document management, and scalable background processing via Celery.
+## Stack
 
-## Features
+| Layer | Technology |
+|-------|-----------|
+| API | FastAPI + Uvicorn |
+| Worker | Celery (Redis broker) |
+| Database | PostgreSQL (SQLAlchemy 2 + Alembic) |
+| Clause storage | JSONB column on `documents` table |
+| File storage | MinIO (S3-compatible) |
+| LLM | Google Gemini via LangChain |
+| Frontend | Vite + React + TypeScript + TanStack Query + Tailwind CSS |
+| Package manager | `uv` (backend) / `npm` (frontend) |
 
-- **User Authentication:** Secure registration and login using JWT.
-- **Document Upload:** Accepts PDF files and stores them for analysis.
-- **Automated Analysis:** Uses LLM (Google Gemini) to analyze clauses and chapters.
-- **Risk Assessment:** Categorizes clauses and rates consumer risk.
-- **Background Processing:** Asynchronous analysis via Celery tasks.
-- **Rate & Concurrency Limiting:** Prevents abuse of LLM API.
-- **MongoDB Storage:** Stores clause analysis results for fast retrieval.
-
-## Project Structure
+## Monorepo layout
 
 ```
-tos-analyzer/
-├── app/
-│   ├── __init__.py
-│   ├── main.py                # FastAPI entrypoint
-│   ├── config.py              # App settings (env vars)
-│   ├── models.py              # SQLAlchemy models (User, Document)
-│   ├── enums.py               # Enum types (statuses, risk levels)
-│   ├── constants.py           # Clause categories
-│   ├── logger.py              # Logging setup
-│   ├── celery.py              # Celery configuration
-│   ├── tasks.py               # Celery tasks (document analysis)
-│   ├── utils.py               # Utility functions (file saving, analyzer service)
-│   ├── analyzer/              # Document analysis logic
-│   │   ├── routes.py          # API endpoints for analysis
-│   │   ├── schemas.py         # Pydantic models for analysis
-│   │   ├── llm_analyzer.py    # LLM-based clause analysis
-│   │   ├── pdf_parser.py      # PDF parsing and chapter extraction
-│   │   ├── service.py         # Analyzer service orchestration
-│   │   ├── templates.py       # Prompt templates for LLM
-│   │   ├── rate_limiter.py    # API rate limiting
-│   │   ├── concurrency_limiter.py # Concurrency limiting
-│   │   ├── document_repository.py # DB access for documents
-│   ├── auth/                  # Authentication logic
-│   │   ├── routes.py          # Auth endpoints
-│   │   ├── schemas.py         # Pydantic models for auth
-│   │   ├── dependencies.py    # Auth dependencies for FastAPI
-│   │   ├── service.py         # Auth service (JWT, password hashing)
-│   ├── db/
-│   │   ├── db.py              # SQLAlchemy DB setup
-│   │   ├── mongo.py           # MongoDB setup
-├── alembic/                   # Database migrations
-│   ├── env.py
-│   ├── README
-│   ├── script.py.mako
-│   ├── versions/
-│   │   ├── <migration files>.py
-├── uploads/                   # Uploaded PDF files (created at runtime)
-├── .env                       # Environment variables (not committed)
+practice/
+├── backend/          # FastAPI + Celery
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── models.py         # User, Document (JSONB clauses column)
+│   │   ├── storage.py        # MinIO client helpers
+│   │   ├── tasks.py          # Celery task: download→analyze→save
+│   │   ├── analyzer/         # PDF parser, LLM analyzer, routes
+│   │   └── auth/             # JWT auth routes + service
+│   ├── alembic/              # DB migrations
+│   ├── tests/                # pytest (26 tests, no live services needed)
+│   ├── pyproject.toml        # uv-managed dependencies
+│   └── .env.example
+├── frontend/         # Vite + React + TypeScript
+│   └── src/
+│       ├── api/      # axios client + typed API functions
+│       └── pages/    # login, register, upload, list, detail, clauses
+└── docker-compose.yml
 ```
 
-## Setup & Installation
-
-1. **Clone the repository:**
-   ```sh
-   git clone <repo-url>
-   cd tos-analyzer
-   ```
-
-2. **Create and activate a Python virtual environment:**
-   ```sh
-   python -m venv venv
-   venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-   ```sh
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment variables:**
-   - Copy `.env.example` to `.env` and fill in required values (DB URLs, API keys, secrets).
-
-5. **Run database migrations:**
-   ```sh
-   alembic upgrade head
-   ```
-
-## Running the Application
-
-### 1. Start the FastAPI server
+## Quick start (Docker)
 
 ```sh
-uvicorn app.main:app --reload
+cp backend/.env.example backend/.env
+# Edit backend/.env: set GOOGLE_API_KEY and a strong SECRET_KEY
+docker compose up --build
 ```
 
-- The API will be available at `http://localhost:8000`
+Services:
+- Frontend: http://localhost:5173 (dev) / http://localhost:80 (prod)
+- Backend API: http://localhost:8000
+- MinIO console: http://localhost:9001 (minioadmin / minioadmin)
 
-### 2. Start the Celery worker
+Apply migrations on first run:
+```sh
+docker compose exec backend alembic upgrade head
+```
+
+## Local development
+
+### Backend
 
 ```sh
-celery -A app.celery.celery worker --loglevel=info
+cd backend
+cp .env.example .env   # fill in values
+uv sync
+uv run uvicorn app.main:app --reload
+# In another terminal:
+uv run celery -A app.celery worker --loglevel=info
 ```
-#### 2.1 For windows
+
+### Frontend
+
 ```sh
-celery -A app  worker --pool=threads --loglevel=info
+cd frontend
+npm install
+npm run dev   # proxies /api → http://localhost:8000
 ```
-- Celery will process document analysis tasks in the background.
 
-### 3. MongoDB & Redis
+### Tests
 
-- Ensure MongoDB and Redis are running and accessible at the URIs specified in `.env`.
+```sh
+cd backend
+uv run pytest tests/ -v
+```
 
-## API Endpoints
+## API endpoints
 
-### Authentication
+### Auth
+- `POST /auth/register` — create account
+- `POST /auth/token` — get JWT (OAuth2 password form)
 
-- `POST /auth/register` — Register a new user.
-- `POST /auth/token` — Obtain JWT token.
+### Documents
+- `POST /document/` — upload PDF (multipart)
+- `GET /documents/` — list user's documents
+- `GET /document/{id}` — document detail
+- `GET /document/{id}/status` — polling endpoint
+- `POST /document/{id}/analyze` — enqueue analysis
+- `GET /document/{id}/clauses` — clause analysis results (JSONB)
+- `GET /document/{id}/download-url` — presigned MinIO URL
 
-### Document Management
+## Environment variables
 
-- `POST /document/` — Upload a PDF document.
-- `GET /documents/` — List user's documents.
-- `GET /document/{id}` — Get document details.
-- `GET /document/{id}/status` — Check analysis status.
-- `POST /document/{id}/analyze` — Start analysis (background task).
-- `GET /document/{id}/clauses` — Get clause analysis results.
+See `backend/.env.example` for the full list. Required:
 
-## Configuration Parameters
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `GOOGLE_API_KEY` | Gemini API key |
+| `SECRET_KEY` | JWT signing key (≥32 chars) |
+| `CELERY_BROKER_URL` | Redis URL |
+| `CELERY_RESULT_BACKEND` | Redis URL |
 
-All configuration is managed via environment variables in `.env`:
-
-- `DATABASE_URL` — SQLAlchemy DB URI
-- `GOOGLE_API_KEY` — API key for Gemini LLM
-- `MONGO_URI` — MongoDB URI
-- `CELERY_BROKER_URL` — Celery broker (e.g., Redis)
-- `SECRET_KEY` — JWT secret
-- `LLM_MODEL_NAME`, `LLM_TEMPERATURE`, etc. — LLM settings
-
-See [`app/config.py`](app/config.py) for all available settings.
-
-## Notes
-
-- Uploaded files are saved in the `uploads/` folder.
-- Clause analysis results are stored in MongoDB for fast retrieval.
-- Rate and concurrency limits are enforced for LLM API usage.
-- All migrations are managed via Alembic (`alembic/` folder).
+MinIO defaults to `minioadmin/minioadmin` on `localhost:9000` (safe for local dev, change in production).
 
 ---
