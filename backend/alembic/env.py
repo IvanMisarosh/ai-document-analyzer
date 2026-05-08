@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -6,8 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from app import models
-from app.auth import models as auth_models
+from app import models  # noqa: F401 — registers ORM models with Base
 from app.db.db import Base
 from app.config import settings
 

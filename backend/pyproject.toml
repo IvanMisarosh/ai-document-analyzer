@@ -1,0 +1,43 @@
+[project]
+name = "tos-analyzer"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.116.0",
+    "uvicorn[standard]>=0.35.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.16.0",
+    "psycopg2-binary>=2.9.0",
+    "pydantic-settings>=2.10.0",
+    "python-dotenv>=1.1.0",
+    "celery[redis]>=5.5.0",
+    "redis>=5.3.0",
+    "pymupdf>=1.26.0",
+    "langchain-google-genai>=2.1.0",
+    "langchain-text-splitters>=0.3.0",
+    "pyjwt>=2.10.0",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.3.0",
+    "python-multipart>=0.0.20",
+    "filetype>=1.2.0",
+    "cachetools>=5.5.0",
+    "limits[redis]>=5.4.0",
+    "minio>=7.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-asyncio>=0.25.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
