@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import bcrypt
 import jwt
 from fastapi import HTTPException, status
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from jwt.exceptions import InvalidTokenError
 
@@ -12,14 +12,11 @@ from app.config import settings
 
 
 class AuthService:
-    def __init__(self):
-        self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return self.pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
     def get_password_hash(self, password: str) -> str:
-        return self.pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
     def get_user_by_username(self, db: Session, username: str) -> Optional[models.User]:
         return db.query(models.User).filter(models.User.username == username).first()

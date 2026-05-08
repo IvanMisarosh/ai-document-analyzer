@@ -1,10 +1,29 @@
+import os
 import pytest
 from unittest.mock import Mock
-from app.analyzer.pdf_parser import PDFParser
-from app.auth.service import AuthService
-from app.auth import schemas
-from app import models
-from sqlalchemy.orm import Session
+
+# Set required env vars before any app module is imported.
+# pydantic-settings instantiates Settings() at import time, so these must
+# be present in os.environ before the first `import app.*`.
+_TEST_ENV = {
+    "DATABASE_URL": "postgresql://test:test@localhost:5432/test",
+    "GOOGLE_API_KEY": "fake-key-for-tests",
+    "CELERY_BROKER_URL": "redis://localhost:6379/0",
+    "CELERY_RESULT_BACKEND": "redis://localhost:6379/0",
+    "SECRET_KEY": "test-secret-key-not-for-production-use-at-least-32ch",
+    "REDIS_URL": "redis://localhost:6379/0",
+    "MINIO_ENDPOINT": "localhost:9000",
+    "MINIO_ACCESS_KEY": "minioadmin",
+    "MINIO_SECRET_KEY": "minioadmin",
+}
+for key, value in _TEST_ENV.items():
+    os.environ.setdefault(key, value)
+
+from app.analyzer.pdf_parser import PDFParser  # noqa: E402
+from app.auth.service import AuthService  # noqa: E402
+from app.auth import schemas  # noqa: E402
+from app import models  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
 
 
 @pytest.fixture
