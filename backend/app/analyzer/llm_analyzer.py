@@ -3,7 +3,7 @@ from typing import List, Tuple, Iterable
 from app.analyzer.templates import prompt_template
 from app.analyzer import schemas
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.logger import logger
 from app.analyzer.rate_limiter import is_allowed
 from app.config import settings
@@ -65,8 +65,7 @@ class LLMAnalyzer:
                         f"Analysis failed after {
                             settings.MAX_RETRIES} attempts. Last error: {e}")
                     raise RuntimeError(
-                        f"Failed to analyze chunk after {
-                            settings.MAX_RETRIES} retries") from e
+                        f"Failed to analyze chunk after {settings.MAX_RETRIES} retries") from e
 
                 wait_time = self._calculate_backoff_time(attempt)
                 logger.warning(

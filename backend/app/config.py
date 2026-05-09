@@ -11,10 +11,10 @@ class Settings(BaseSettings):
     CELERY_RESULT_BACKEND: str
 
     # Redis configuration
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = "redis://localhost:6380/0"
 
     # MinIO / object storage
-    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ENDPOINT: str = "localhost:9002"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET: str = "documents"
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # LLM settings
-    LLM_MODEL_NAME: str = "gemini-2.0-flash-lite"
+    LLM_MODEL_NAME: str = "gemini-3.1-flash-lite"
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_CHUNK_LENGTH: int = 8000
     LLM_CHUNK_TEXT_OVERLAP: int = 150
